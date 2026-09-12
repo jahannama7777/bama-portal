@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: var(--font-vazir), Tahoma, sans-serif;
+  --font-heading: var(--font-yekan), var(--font-vazir), sans-serif;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-vazir), Tahoma, sans-serif;
+    @apply bg-slate-100 text-slate-800 transition-colors duration-300;
+  }
+  
+  .dark body {
+    @apply bg-[#070c18] text-slate-100;
+  }
+
+  /* اعمال فونت یکان روی کلیه عناوین و تیترها */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-yekan), var(--font-vazir), sans-serif;
+  }
+}
+
+/* اسکرول‌بار */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-slate-200 dark:bg-[#0f172a];
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-400 dark:bg-[#1e293b] rounded-full;
+}
