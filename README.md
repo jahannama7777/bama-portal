@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Bama Portal (پورتال سازمانی باما)
 
-## Getting Started
+[![Next.js](https://img.shields.io/badge/Next.js-15.0-black?logo=next.js)](https://nextjs.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-6.4-blue?logo=prisma)](https://prisma.io/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-blue?logo=tailwind-css)](https://tailwindcss.com/)
 
-First, run the development server:
+---
 
+## 🇬🇧 English Description
+
+**Bama Portal** is a comprehensive organizational dashboard designed to streamline internal operations. This project provides a centralized hub for managing company assets, attendance, food reservation systems, and network status, featuring a secure role-based access control (RBAC) system.
+
+### Key Features
+*   **Role-Based Access Control (RBAC):** Distinct interfaces for User, Admin, and SuperAdmin.
+*   **Integrated Widgets:** Real-time weather monitoring (Open-Meteo), clock, and date widgets.
+*   **App Launcher:** A centralized portal to launch internal tools like attendance tracking and CCTV monitoring.
+*   **User Management:** Efficient admin panel for user CRUD operations and session management.
+*   **Responsive UI:** Modern design with glassmorphism effects and Tailwind CSS styling.
+*   **Tech Stack:** Built with Next.js (App Router), Prisma ORM, and PostgreSQL/SQLite.
+
+---
+
+## 🇮🇷 توضیحات فارسی
+
+**پورتال سازمانی باما** یک داشبورد جامع مدیریتی است که با هدف یکپارچه‌سازی فرآیندهای داخلی سازمان طراحی شده است. این سیستم بستری متمرکز برای مدیریت پرسنل، سیستم حضور و غیاب، رزرو غذا و نظارت بر شبکه ارائه می‌دهد.
+
+### ویژگی‌های کلیدی
+*   **سیستم احراز هویت و سطوح دسترسی (RBAC):** مدیریت کاربران در سه سطح USER، ADMIN و SUPERADMIN.
+*   **ویجت‌های کاربردی:** نمایش زنده وضعیت آب و هوا (Open-Meteo)، تقویم و ساعت.
+*   **لانچر اپلیکیشن:** پنل دسترسی سریع به ابزارهای داخلی مانند سیستم حضور و غیاب و تصاویر دوربین‌های مداربسته (CCTV).
+*   **مدیریت کاربران:** پنل ادمین پیشرفته برای مدیریت حساب‌های کاربری و لاگ‌ها.
+*   **طراحی مدرن:** استفاده از تکنیک Glassmorphism و Tailwind CSS برای تجربه کاربری بهینه و ریسپانسیو.
+*   **تکنولوژی‌های استفاده شده:** Next.js (App Router), Prisma ORM, Tailwind CSS.
+
+---
+
+## 🚀 Getting Started / شروع به کار
+
+### Prerequisites / پیش‌نیازها
+- Node.js (v18+)
+- npm or yarn
+
+### Installation / نصب
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+   git clone https://github.com/jahannama7777/bama-portal.git
+   cd bama-portal
+   
