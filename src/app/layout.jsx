@@ -1,8 +1,11 @@
 import localFont from "next/font/local";
 import "./globals.css";
-import { AuthProvider } from "@/src/context/AuthContext";
 
-// تعریف فونت وزیر با وزن‌های مختلف
+import { AuthProvider } from "@/src/context/AuthContext";
+import { NotificationProvider } from "@/src/context/NotificationContext";
+import { StatsProvider } from "@/src/context/StatsContext";
+import { AppsProvider } from "@/src/context/AppsContext";
+
 const vazir = localFont({
   src: [
     {
@@ -35,7 +38,6 @@ const vazir = localFont({
   display: "swap",
 });
 
-// تعریف فونت یکان
 const yekan = localFont({
   src: [
     {
@@ -48,12 +50,17 @@ const yekan = localFont({
   display: "swap",
 });
 
-// متادیتا و مشخصات سیستم
 export const metadata = {
   title: "پیشخوان سازمانی شرکت باما | پورتال یکپارچه",
-  description: "سامانه دسترسی سریع به سامانه‌ها و سرویس‌های داخلی شرکت باما",
+  description:
+    "سامانه دسترسی سریع به سامانه‌ها و سرویس‌های داخلی شرکت باما",
   applicationName: "Bama Enterprise Portal",
-  authors: [{ name: "جابر بکرانی", url: "https://bama.ir" }],
+  authors: [
+    {
+      name: "جابر بکرانی",
+      url: "https://bama.ir",
+    },
+  ],
   creator: "جابر بکرانی",
   publisher: "Jaber Bakrani",
   other: {
@@ -71,9 +78,13 @@ export default function RootLayout({ children }) {
       suppressHydrationWarning
       className={`${vazir.variable} ${yekan.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans bg-slate-50 dark:bg-[#070c18] text-slate-800 dark:text-slate-100 selection:bg-cyan-500 selection:text-white transition-colors duration-200">
+      <body className="min-h-full flex flex-col bg-slate-50 font-sans text-slate-800 selection:bg-cyan-500 selection:text-white transition-colors duration-200 dark:bg-[#070c18] dark:text-slate-100">
         <AuthProvider>
-          {children}
+          <NotificationProvider>
+            <StatsProvider>
+              <AppsProvider>{children}</AppsProvider>
+            </StatsProvider>
+          </NotificationProvider>
         </AuthProvider>
       </body>
     </html>

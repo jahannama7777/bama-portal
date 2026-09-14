@@ -1,55 +1,63 @@
+datasource db {
+  provider = "sqlite" // یا postgresql بر اساس فایل .env شما
+  url      = env("DATABASE_URL")
+}
+
 generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+model User {
+  id         Int        @id @default(autoincrement())
+  username   String     @unique
+  fullName   String
+  department String?    @default("فناوری اطلاعات")
+  password   String
+  role       String     @default("USER") // USER, ADMIN, SUPERADMIN
+  createdAt  DateTime   @default(now())
+
+  sessions   Session[]
 }
 
-model User {
-  id           String     @id @default(cuid())
-  username     String     @unique
-  fullName     String?
-  password     String     // کلمه عبور هش شده
-  role         String     @default("USER") // SUPERADMIN, ADMIN, USER, GUEST
-  isActive     Boolean    @default(true)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  auditLogs    AuditLog[]
+model Session {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }
 
 model Application {
-  id          String   @id @default(cuid())
-  title       String   // نام فارسی سامانه
-  titleEn     String?  // نام انگلیسی سامانه
-  description String?  // توضیحات
-  url         String   // آدرس دسترسی
-  icon        String?  // نام آیکون Lucide
-  category    String   @default("عمومی")
-  color       String   @default("from-blue-600 to-indigo-600")
-  order       Int      @default(0)
-  isActive    Boolean  @default(true)
-  isExternal  Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model PortalSetting {
-  id        String   @id @default(cuid())
-  key       String   @unique
-  value     String
+  id        Int      @id @default(autoincrement())
+  titleFa   String
+  titleEn   String?
+  desc      String?
+  icon      String
+  url       String
+  href      String?
+  roles     String   @default("[\"USER\",\"ADMIN\",\"SUPERADMIN\"]")
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model AuditLog {
-  id         String   @id @default(cuid())
-  userId     String?
-  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  action     String   // CREATE, UPDATE, DELETE, TOGGLE_VISIBILITY
-  entityType String   // APPLICATION, SETTING, USER
-  entityId   String?
-  details    String?
-  ipAddress  String?
+model Notification {
+  id         Int      @id @default(autoincrement())
+  title      String
+  desc       String
+  date       String
+  type       String   @default("info") // info, warning, success, danger
+  badge      String?  @default("اطلاعیه")
+  badgeColor String   @default("blue")
   createdAt  DateTime @default(now())
+}
+
+model Stat {
+  id        Int      @id @default(autoincrement())
+  title     String
+  value     String
+  icon      String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
 }
