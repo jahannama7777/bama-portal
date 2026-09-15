@@ -140,12 +140,11 @@ export default function Home() {
             <button
               onClick={handleAddNewApp}
               type="button"
-              className="relative flex items-center justify-center w-12 h-12 rounded-full bg-cyan-600/85 hover:bg-cyan-500 dark:bg-cyan-500/40 dark:hover:bg-cyan-500/60 backdrop-blur-xl border border-white/40 dark:border-cyan-300/40 text-white shadow-[0_8px_30px_rgb(0,0,0,0.25)] transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer"
+              className="animate-pulse relative flex items-center justify-center w-12 h-12 rounded-full bg-cyan-600/85 hover:bg-cyan-500 dark:bg-cyan-500/40 dark:hover:bg-cyan-500/60 backdrop-blur-xl border border-white/40 dark:border-cyan-300/40 text-white shadow-[0_8px_30px_rgb(0,0,0,0.25)] transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer"
             >
               <Plus
                 size={24}
                 strokeWidth={2.5}
-                className="transition-transform duration-500 group-hover:rotate-90"
               />
             </button>
 
