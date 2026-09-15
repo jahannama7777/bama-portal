@@ -14,7 +14,7 @@
 *   **Role-Based Access Control (RBAC):** Distinct interfaces for User, Admin, and SuperAdmin.
 *   **Integrated Widgets:** Real-time weather monitoring (Open-Meteo), clock, and date widgets.
 *   **App Launcher:** A centralized portal to launch internal tools like attendance tracking and CCTV monitoring.
-*   **User Management:** Efficient admin panel for user CRUD operations and session management.
+*   **Network Monitoring:** Designed to interface with backend network infrastructure, including status monitoring for wireless back-to-back links managed by MikroTik.
 *   **Responsive UI:** Modern design with glassmorphism effects and Tailwind CSS styling.
 *   **Tech Stack:** Built with Next.js (App Router), Prisma ORM, and PostgreSQL/SQLite.
 
@@ -28,9 +28,8 @@
 *   **سیستم احراز هویت و سطوح دسترسی (RBAC):** مدیریت کاربران در سه سطح USER، ADMIN و SUPERADMIN.
 *   **ویجت‌های کاربردی:** نمایش زنده وضعیت آب و هوا (Open-Meteo)، تقویم و ساعت.
 *   **لانچر اپلیکیشن:** پنل دسترسی سریع به ابزارهای داخلی مانند سیستم حضور و غیاب و تصاویر دوربین‌های مداربسته (CCTV).
-*   **مدیریت کاربران:** پنل ادمین پیشرفته برای مدیریت حساب‌های کاربری و لاگ‌ها.
+*   **مانیتورینگ شبکه:** طراحی شده جهت نمایش وضعیت زیرساخت شبکه، شامل مانیتورینگ لینک‌های وایرلس (Back-to-back) که توسط MikroTik مدیریت می‌شوند.
 *   **طراحی مدرن:** استفاده از تکنیک Glassmorphism و Tailwind CSS برای تجربه کاربری بهینه و ریسپانسیو.
-*   **تکنولوژی‌های استفاده شده:** Next.js (App Router), Prisma ORM, Tailwind CSS.
 
 ---
 

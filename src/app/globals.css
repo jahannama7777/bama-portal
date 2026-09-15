@@ -34,3 +34,12 @@
 ::-webkit-scrollbar-thumb {
   @apply bg-slate-400 dark:bg-[#1e293b] rounded-full;
 }
+
+
+/* مخفی کردن بج و نشانگر نکست در گوشه صفحه */
+nextjs-portal,
+[data-nextjs-toast],
+[data-next-badge],
+div[class*="nextjs-toast"] {
+  display: none !important;
+}

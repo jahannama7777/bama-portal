@@ -8,29 +8,29 @@ import {
   CloudRain,
   Sun,
   Cloud,
-  Calendar,
+  CloudSnow,
+  CloudLightning,
   Clock,
   Moon,
   User,
   LogOut,
-  LogIn,
-  UserPlus,
-  X,
-  Sparkles,
   ShieldCheck,
   ShieldAlert,
   Shield
 } from 'lucide-react';
 import { useAuth } from '@/src/context/AuthContext';
 
+// مختصات جغرافیایی منطقه معدن باما (ایران‌کوه - جنوب غرب اصفهان)
+const LATITUDE = 32.51;
+const LONGITUDE = 51.52;
+
 export default function Header({
   searchTerm = '',
   setSearchTerm = () => {},
   onOpenLogin = () => {},
-  onOpenUserModal = () => {}
 }) {
   const authContext = useAuth?.() || {};
-  const { user = null, logout = () => {}, isSuperAdmin = false, isAdmin = false } = authContext;
+  const { user = null, logout = () => {} } = authContext;
 
   const [mounted, setMounted] = useState(false);
   const [time, setTime] = useState('');
@@ -64,34 +64,60 @@ export default function Header({
     return () => clearInterval(timer);
   }, []);
 
-  // دریافت زنده آب و هوا
+  // دریافت زنده آب و هوای منطقه با تایم‌زون رسمی ایران
   useEffect(() => {
     async function fetchWeather() {
       try {
-        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=32.51&longitude=51.52&current_weather=true');
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current_weather=true&timezone=Asia%2FTehran`;
+        const res = await fetch(url);
         const data = await res.json();
+        
         if (data?.current_weather) {
           const temp = Math.round(data.current_weather.temperature);
           const code = data.current_weather.weathercode;
+          
           let condition = 'آفتابی';
           let icon = 'sun';
-          if (code >= 1 && code <= 3) { condition = 'نیمه‌ابری'; icon = 'cloud-sun'; }
-          else if (code >= 45 && code <= 48) { condition = 'مه‌آلود'; icon = 'cloud'; }
-          else if (code >= 51 && code <= 82) { condition = 'بارانی'; icon = 'rain'; }
+
+          // تحلیل دقیق‌تر کدهای استاندارد WMO
+          if (code === 0) {
+            condition = 'صاف و آفتابی';
+            icon = 'sun';
+          } else if (code >= 1 && code <= 3) {
+            condition = 'نیمه‌ابری';
+            icon = 'cloud-sun';
+          } else if (code >= 45 && code <= 48) {
+            condition = 'مه‌آلود';
+            icon = 'cloud';
+          } else if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) {
+            condition = 'بارانی';
+            icon = 'rain';
+          } else if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) {
+            condition = 'برفی';
+            icon = 'snow';
+          } else if (code >= 95 && code <= 99) {
+            condition = 'رعد و برق';
+            icon = 'thunder';
+          }
+
           setWeather({ temp: `${temp}°C`, condition, icon });
         }
       } catch {
-        setWeather({ temp: '۲۲°C', condition: 'صاف', icon: 'sun' });
+        // در صورت عدم دسترسی شبکه
+        setWeather({ temp: '--', condition: 'عدم ارتباط', icon: 'cloud' });
       }
     }
+
     fetchWeather();
-    const interval = setInterval(fetchWeather, 30 * 60 * 1000);
+    const interval = setInterval(fetchWeather, 30 * 60 * 1000); // به‌روزرسانی هر ۳۰ دقیقه
     return () => clearInterval(interval);
   }, []);
 
   const renderWeatherIcon = () => {
     switch (weather.icon) {
       case 'rain': return <CloudRain size={16} className="text-cyan-400" />;
+      case 'snow': return <CloudSnow size={16} className="text-sky-300" />;
+      case 'thunder': return <CloudLightning size={16} className="text-amber-400" />;
       case 'cloud-sun': return <CloudSun size={16} className="text-amber-400" />;
       case 'cloud': return <Cloud size={16} className="text-slate-400" />;
       default: return <Sun size={16} className="text-amber-400" />;
@@ -118,16 +144,16 @@ export default function Header({
   const RoleIcon = roleConfig?.icon || User;
 
   return (
-    <header className="shrink-0 px-4 py-2.5 rounded-2xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.08)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.3)] transition-all duration-300">
+    <header className="shrink-0 px-4 py-2.5 rounded-2xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.08)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.3)] transition-all duration-300">
       <div className="flex items-center justify-between gap-4">
         
-        {/* ۱. لوگو */}
+        {/* ۱. لوگو و عنوان */}
         <div className="flex items-center gap-3 shrink-0">
           <div className="w-10 h-10 rounded-2xl bg-white shadow-sm border border-slate-200/50 p-1 flex items-center justify-center overflow-hidden">
             <Image src="/logo.png" alt="لوگوی باما" width={32} height={32} className="w-full h-full object-contain" priority />
           </div>
           <div className="flex flex-col">
-            <h1 className="text-xs md:text-sm font-black text-slate-800 dark:text-white tracking-tight">پورتال سازمانی باما</h1>
+            <h1 className="text-sm font-black text-slate-800 dark:text-white tracking-tight">پورتال سازمانی باما</h1>
             <p className="text-[10px] text-slate-500 dark:text-slate-400 hidden sm:block">پیشخوان خدمات درون‌سازمانی</p>
           </div>
         </div>
@@ -146,16 +172,34 @@ export default function Header({
           </div>
         </div>
 
-        {/* ۳. بخش ابزارها و کاربر */}
+        {/* ۳. ویجت‌های زمان و آب و هوا (نمایش در دسکتاپ) */}
+        <div className="hidden md:flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-white/10">
+            <Clock size={14} className="text-cyan-500" />
+            <div className="flex flex-col leading-tight text-right">
+              <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 tabular-nums">{mounted ? time : '--:--'}</span>
+              <span className="text-[9px] text-slate-500 dark:text-slate-400">{mounted ? dateStr : ''}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-white/10">
+            {renderWeatherIcon()}
+            <div className="flex flex-col leading-tight text-right">
+              <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200">{weather.temp}</span>
+              <span className="text-[9px] text-slate-500 dark:text-slate-400">{weather.condition}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ۴. بخش ابزارها و کاربر */}
         <div className="flex items-center gap-2 shrink-0">
-          <button onClick={toggleTheme} className="p-2 rounded-xl bg-white/50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-white/10 text-slate-600 dark:text-slate-300">
+          <button onClick={toggleTheme} className="p-2 rounded-xl bg-white/50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:scale-105 transition-transform">
             {isDark ? <Sun size={16} /> : <Moon size={16} />}
           </button>
 
           {user ? (
             <div className="flex items-center p-1 rounded-2xl bg-white/60 dark:bg-slate-950/60 border border-slate-200/80 dark:border-white/10 backdrop-blur-lg">
               <div className="flex items-center gap-2 px-2 py-0.5">
-                <div className={`w-8 h-8 rounded-xl bg-gradient-to-tr ${roleConfig?.avatarGradient} flex items-center justify-center text-white text-xs font-black shadow-md`}>
+                <div className={`w-8 h-8 rounded-xl bg-linear-to-tr ${roleConfig?.avatarGradient} flex items-center justify-center text-white text-xs font-black shadow-md`}>
                   {user.fullName?.charAt(0)}
                 </div>
                 <div className="flex flex-col text-right leading-tight">
@@ -165,13 +209,13 @@ export default function Header({
                   </span>
                 </div>
               </div>
-              <div className="h-6 w-[1px] bg-slate-200 dark:bg-white/10 mx-1" />
+              <div className="h-6 w-px bg-slate-200 dark:bg-white/10 mx-1" />
               <button onClick={logout} className="p-2 rounded-xl text-slate-400 hover:text-rose-500 transition-all">
                 <LogOut size={16} />
               </button>
             </div>
           ) : (
-            <button onClick={onOpenLogin} className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-cyan-600">ورود</button>
+            <button onClick={onOpenLogin} className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-cyan-600 hover:bg-cyan-500 transition-all shadow-md shadow-cyan-600/20">ورود</button>
           )}
         </div>
       </div>

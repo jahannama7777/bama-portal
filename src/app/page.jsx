@@ -74,11 +74,11 @@ export default function Home() {
           priority
           className="object-cover object-center brightness-95 opacity-90 dark:brightness-75"
         />
-        <div className="absolute inset-0 bg-gradient-to-tr from-sky-100/50 via-white/30 to-slate-200/40 dark:from-slate-950/70 dark:via-slate-900/50 dark:to-slate-950/70" />
+        <div className="absolute inset-0 bg-linear-to-tr from-sky-100/50 via-white/30 to-slate-200/40 dark:from-slate-950/70 dark:via-slate-900/50 dark:to-slate-950/70" />
       </div>
 
       {/* کانتینر اصلی داشبورد */}
-      <div className="relative z-10 flex flex-col w-full max-w-[1380px] min-h-[500px] max-h-[85vh] bg-white/50 dark:bg-slate-900/40 backdrop-blur-md rounded-3xl border border-white/70 dark:border-white/10 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.7)] overflow-hidden transition-all duration-300">
+      <div className="relative z-10 flex flex-col w-full max-w-345 min-h-125 max-h-[85vh] bg-white/50 dark:bg-slate-900/40 backdrop-blur-md rounded-3xl border border-white/70 dark:border-white/10 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.7)] overflow-hidden transition-all duration-300">
 
         <div className="flex-1 min-h-0 flex flex-col gap-3">
           {/* هدر */}
@@ -135,7 +135,7 @@ export default function Home() {
         {/* دکمه شناور افزودن سامانه */}
         {canManage && (
           <div className="absolute left-6 bottom-6 z-40 group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full blur-md opacity-50 group-hover:opacity-85 transition duration-500 group-hover:scale-110 pointer-events-none" />
+            <div className="absolute -inset-1 bg-linear-to-r from-cyan-500 to-blue-600 rounded-full blur-md opacity-50 group-hover:opacity-85 transition duration-500 group-hover:scale-110 pointer-events-none" />
 
             <button
               onClick={handleAddNewApp}
