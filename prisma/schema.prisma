@@ -8,15 +8,15 @@ generator client {
 }
 
 model User {
-  id         Int        @id @default(autoincrement())
-  username   String     @unique
-  fullName   String
-  department String?    @default("فناوری اطلاعات")
-  password   String
-  role       String     @default("USER") // USER, ADMIN, SUPERADMIN
-  createdAt  DateTime   @default(now())
-
-  sessions   Session[]
+  id            Int            @id @default(autoincrement())
+  username      String         @unique
+  fullName      String
+  department    String?        @default("فناوری اطلاعات")
+  password      String
+  role          String         @default("USER") // USER, ADMIN, SUPERADMIN
+  createdAt     DateTime       @default(now())
+  notifications Notification[]
+  sessions      Session[]
 }
 
 model Session {
@@ -43,14 +43,16 @@ model Application {
 }
 
 model Notification {
-  id         Int      @id @default(autoincrement())
-  title      String
-  desc       String
-  date       String
-  type       String   @default("info") // info, warning, success, danger
-  badge      String?  @default("اطلاعیه")
-  badgeColor String   @default("blue")
-  createdAt  DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  title       String
+  desc        String
+  date        String
+  type        String   @default("info") // info, warning, success, danger
+  badge       String?  @default("اطلاعیه")
+  badgeColor  String   @default("blue")
+  createdAt   DateTime @default(now())
+  createdById Int?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
 }
 
 model Stat {

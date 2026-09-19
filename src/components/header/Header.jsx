@@ -16,7 +16,8 @@ import {
   LogOut,
   ShieldCheck,
   ShieldAlert,
-  Shield
+  Shield,
+  Users // آیکون اضافه شد
 } from 'lucide-react';
 import { useAuth } from '@/src/context/AuthContext';
 
@@ -28,9 +29,16 @@ export default function Header({
   searchTerm = '',
   setSearchTerm = () => {},
   onOpenLogin = () => {},
+  onOpenUserManagement = () => {}, // پراپ جدید برای باز کردن مودال
 }) {
   const authContext = useAuth?.() || {};
   const { user = null, logout = () => {} } = authContext;
+
+  // منطق دسترسی: ادمینِ فناوری اطلاعات یا سوپرادمین
+  const canManageUsers = user && (
+    user.role === 'SUPERADMIN' || 
+    (user.role === 'ADMIN' && user.department === 'فناوری اطلاعات')
+  );
 
   const [mounted, setMounted] = useState(false);
   const [time, setTime] = useState('');
@@ -195,6 +203,17 @@ export default function Header({
           <button onClick={toggleTheme} className="p-2 rounded-xl bg-white/50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:scale-105 transition-transform">
             {isDark ? <Sun size={16} /> : <Moon size={16} />}
           </button>
+
+          {/* دکمه مدیریت کاربران (نمایش شرطی) */}
+          {canManageUsers && (
+            <button 
+              onClick={onOpenUserManagement}
+              className="p-2 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/20 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 hover:scale-105 transition-transform"
+              title="مدیریت کاربران"
+            >
+              <Users size={16} />
+            </button>
+          )}
 
           {user ? (
             <div className="flex items-center p-1 rounded-2xl bg-white/60 dark:bg-slate-950/60 border border-slate-200/80 dark:border-white/10 backdrop-blur-lg">

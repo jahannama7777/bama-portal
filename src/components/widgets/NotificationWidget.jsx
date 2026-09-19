@@ -36,14 +36,27 @@ import { useNotifications } from '@/src/context/NotificationContext';
 import NotificationEditModal from './NotificationEditModal';
 
 export default function NotificationWidget() {
-  const { isAdmin, isSuperAdmin } = useAuth();
+  const { isAdmin, isSuperAdmin, lowLevelAdmin, allowedDepartments } = useAuth();
+
   const { notifications, addNotification, updateNotification, deleteNotification } = useNotifications();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
 
-  const canManage = isSuperAdmin || isAdmin;
+  const canManage = isSuperAdmin || isAdmin || lowLevelAdmin;
+// تابع کمکی برای بررسی دسترسی ویرایش/حذف برای هر آیتم
+  const canModify = (item) => {
+    // اگر سوپر ادمین یا ادمین کلی باشد، دسترسی دارد
+    if (isSuperAdmin || isAdmin) return true;
+    
+    // اگر ادمین دپارتمان‌های خاص باشد
+    if (allowedDepartments) return true;
 
+    // اگر LowLevelAdmin است، فقط در صورتی اجازه دارد که خودش سازنده باشد
+    if (lowLevelAdmin && item.createdById === user?.id) return true;
+
+    return false;
+  };
   // نگاشت آیکون‌ها بر اساس نوع
   const getIcon = (type) => {
     const iconProps = { size: 16 };
@@ -172,7 +185,7 @@ export default function NotificationWidget() {
                           {item.date}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed break-words">
+                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed wrap-break-word">
                         {item.desc}
                       </p>
                     </div>

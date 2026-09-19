@@ -12,10 +12,21 @@ import {
 
 const AuthContext = createContext();
 
+// تعریف دپارتمان‌های مجاز برای دسترسی مدیریتی
+const allowedDepartments = ["فناوری اطلاعات", "فناوری اطلاعات و ارتباطات", "IT"];
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [usersList, setUsersList] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // تابع کمکی برای بررسی دسترسی مدیریتی
+  const checkIsAdminWithAccess = (userObj) => {
+    if (!userObj) return false;
+    if (userObj.role === "SUPERADMIN") return true;
+    if (userObj.role === "ADMIN" && userObj.department.includes(allowedDepartments)) return true;
+    return false;
+  };
 
   // دریافت سشن کاربر از روی کوکی + دیتابیس
   const refreshSession = async () => {
@@ -47,7 +58,8 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    if (user && (user.role === "SUPERADMIN" || user.role === "ADMIN")) {
+    // استفاده از تابع کمکی برای چک کردن دسترسی
+    if (checkIsAdminWithAccess(user)) {
       refreshUsers();
     } else {
       setUsersList([]);
@@ -66,10 +78,8 @@ export const AuthProvider = ({ children }) => {
       if (result.success) {
         setUser(result.user);
 
-        if (
-          result.user.role === "SUPERADMIN" ||
-          result.user.role === "ADMIN"
-        ) {
+        // اگر کاربر لاگین شده دسترسی ادمین دارد، لیست کاربران را هم بگیر
+        if (checkIsAdminWithAccess(result.user)) {
           await refreshUsers();
         }
       }
@@ -140,8 +150,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPERADMIN";
+  // هوک‌ها و وضعیت‌ها
   const isSuperAdmin = user?.role === "SUPERADMIN";
+  
+  // دسترسی ادمین (یا سوپر ادمین) که دپارتمان مجاز دارد
+  const isAdmin = checkIsAdminWithAccess(user);
+  const lowLevelAdmin = user?.role === "ADMIN"
 
   return (
     <AuthContext.Provider
@@ -158,6 +172,8 @@ export const AuthProvider = ({ children }) => {
         deleteUser,
         refreshSession,
         refreshUsers,
+        allowedDepartments,
+        lowLevelAdmin,
       }}
     >
       {children}

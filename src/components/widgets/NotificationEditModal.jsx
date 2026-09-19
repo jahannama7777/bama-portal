@@ -129,7 +129,7 @@ export default function NotificationEditModal({ isOpen, onClose, onSave, editDat
   if (!isOpen || !mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4" dir="rtl">
+    <div className="fixed inset-0 z-99999 flex items-center justify-center p-4" dir="rtl">
       {/* بک‌دراپ تیره تمام‌صفحه */}
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity"
