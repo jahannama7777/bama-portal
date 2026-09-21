@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Globe, AppWindow, Link2, FileText, Check } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
+import { useToast } from '@/src/context/ToastContext';
 
 // آیکون‌های پرکاربرد برای انتخاب سریع در پورتال سازمانی
 const POPULAR_ICONS = [
@@ -13,6 +15,8 @@ const POPULAR_ICONS = [
 ];
 
 export default function AppEditModal({ isOpen, onClose, onSave, appData }) {
+  const { showToast } = useToast();
+  const [mounted, setMounted] = useState(false);
   const [formData, setFormData] = useState({
     titleFa: '',
     titleEn: '',
@@ -21,6 +25,12 @@ export default function AppEditModal({ isOpen, onClose, onSave, appData }) {
     icon: 'Globe',
   });
 
+  // اطمینان از آماده بودن DOM برای Portal در سمت کلاینت
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // همگام‌سازی داده‌های ورودی با فرم
   useEffect(() => {
     if (appData) {
       setFormData({
@@ -33,11 +43,25 @@ export default function AppEditModal({ isOpen, onClose, onSave, appData }) {
     }
   }, [appData, isOpen]);
 
-  if (!isOpen) return null;
+  // بستن مودال با کلید Escape
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose?.();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen || !mounted) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.titleFa.trim()) return;
+    if (!formData.titleFa.trim()) {
+      showToast('لطفاً عنوان فارسی سامانه را وارد کنید.', 'error');
+      return;
+    }
 
     onSave({
       ...appData,
@@ -49,12 +73,13 @@ export default function AppEditModal({ isOpen, onClose, onSave, appData }) {
       icon: formData.icon,
     });
 
+    showToast(`تغییرات سامانه «${formData.titleFa.trim()}» با موفقیت ثبت شد.`, 'success');
     onClose();
   };
 
   const SelectedIcon = LucideIcons[formData.icon] || LucideIcons.Globe;
 
-  return (
+  const modalContent = (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in">
       <div 
         className="relative w-full max-w-lg bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-2xl text-slate-800 dark:text-white overflow-hidden"
@@ -167,7 +192,7 @@ export default function AppEditModal({ isOpen, onClose, onSave, appData }) {
                     onClick={() => setFormData({ ...formData, icon: iconName })}
                     className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${
                       isSelected
-                        ? 'bg-cyan-500/20 border-cyan-500 text-cyan-500'
+                        ? 'bg-cyan-500/20 border-cyan-500 text-cyan-500 ring-1 ring-cyan-500'
                         : 'border-transparent hover:bg-slate-200/60 dark:hover:bg-white/5 text-slate-400'
                     }`}
                     title={iconName}
@@ -199,4 +224,6 @@ export default function AppEditModal({ isOpen, onClose, onSave, appData }) {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

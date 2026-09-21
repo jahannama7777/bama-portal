@@ -1,30 +1,29 @@
-// src/components/auth/LoginModal.jsx
 'use client';
 
 import React, { useState } from 'react';
 import { X, Lock, User, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth } from '@/src/context/AuthContext';
+import { useToast } from '@/src/context/ToastContext';
 
 export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const { login } = useAuth();
+  const { showToast } = useToast();
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
 
     const cleanUser = username.trim();
     const cleanPass = password.trim();
 
     if (!cleanUser || !cleanPass) {
-      setError('لطفاً نام کاربری و رمز عبور را وارد کنید.');
+      showToast('لطفاً نام کاربری و رمز عبور را وارد کنید.', 'error');
       return;
     }
 
@@ -33,17 +32,19 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
     try {
       const data = await login(cleanUser, cleanPass);
 
-      if (!data || !data.success) {
-        setError(data?.error || data?.message || 'نام کاربری یا رمز عبور اشتباه است.');
-        setLoading(false);
-        return;
+      if (data && data.success) {
+        showToast('خوش آمدید! ورود با موفقیت انجام شد.', 'success');
+        if (onLoginSuccess) onLoginSuccess(data.user);
+        onClose();
+        // پاکسازی فرم
+        setUsername('');
+        setPassword('');
+      } else {
+        showToast(data?.message || 'نام کاربری یا رمز عبور اشتباه است.', 'error');
       }
-
-      if (onLoginSuccess) onLoginSuccess(data.user);
-      onClose();
     } catch (err) {
       console.error(err);
-      setError('خطا در برقراری ارتباط با سرور.');
+      showToast('خطا در برقراری ارتباط با سرور.', 'error');
     } finally {
       setLoading(false);
     }
@@ -69,12 +70,6 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
           <h2 className="text-xl font-bold">ورود به پرتال باما</h2>
           <p className="text-xs text-slate-400 mt-1">مشخصات کاربری خود را وارد کنید</p>
         </div>
-
-        {error && (
-          <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs text-center font-medium">
-            {error}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -116,7 +111,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-2 py-3 px-4 rounded-xl bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/20 transition disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full mt-2 py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/20 transition disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading ? (
               <>

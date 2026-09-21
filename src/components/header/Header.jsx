@@ -17,39 +17,32 @@ import {
   ShieldCheck,
   ShieldAlert,
   Shield,
-  Users // آیکون اضافه شد
+  Users
 } from 'lucide-react';
 import { useAuth } from '@/src/context/AuthContext';
+import { useToast } from '@/src/context/ToastContext';
+import UserManagementModal from '../auth/UserManagementModal';
 
-// مختصات جغرافیایی منطقه معدن باما (ایران‌کوه - جنوب غرب اصفهان)
+// مختصات جغرافیایی منطقه معدن باما
 const LATITUDE = 32.51;
 const LONGITUDE = 51.52;
 
-export default function Header({
-  searchTerm = '',
-  setSearchTerm = () => {},
-  onOpenLogin = () => {},
-  onOpenUserManagement = () => {}, // پراپ جدید برای باز کردن مودال
-}) {
-  const authContext = useAuth?.() || {};
-  const { user = null, logout = () => {} } = authContext;
+export default function Header({ searchTerm, setSearchTerm, onOpenLogin, onOpenUserModal }) {
 
-  // منطق دسترسی: ادمینِ فناوری اطلاعات یا سوپرادمین
-  const canManageUsers = user && (
-    user.role === 'SUPERADMIN' || 
-    (user.role === 'ADMIN' && user.department === 'فناوری اطلاعات')
-  );
+  // ۱. مدیریت وضعیت مودال (State) - کاملاً محلی
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  
+  const authContext = useAuth?.() || {};
+  const { user = null, logout = () => {}, can } = authContext;
+  const { showToast } = useToast();
+
+  const canManageUsers = can?.manageUsers?.(user) ?? false;
 
   const [mounted, setMounted] = useState(false);
   const [time, setTime] = useState('');
   const [dateStr, setDateStr] = useState('');
   const [isDark, setIsDark] = useState(true);
-
-  const [weather, setWeather] = useState({
-    temp: '--',
-    condition: 'در حال دریافت...',
-    icon: 'sun'
-  });
+  const [weather, setWeather] = useState({ temp: '--', condition: 'در حال دریافت...', icon: 'sun' });
 
   // مدیریت زمان و تاریخ شمسی
   useEffect(() => {
@@ -72,7 +65,7 @@ export default function Header({
     return () => clearInterval(timer);
   }, []);
 
-  // دریافت زنده آب و هوای منطقه با تایم‌زون رسمی ایران
+  // دریافت آب و هوا
   useEffect(() => {
     async function fetchWeather() {
       try {
@@ -83,41 +76,22 @@ export default function Header({
         if (data?.current_weather) {
           const temp = Math.round(data.current_weather.temperature);
           const code = data.current_weather.weathercode;
-          
           let condition = 'آفتابی';
           let icon = 'sun';
-
-          // تحلیل دقیق‌تر کدهای استاندارد WMO
-          if (code === 0) {
-            condition = 'صاف و آفتابی';
-            icon = 'sun';
-          } else if (code >= 1 && code <= 3) {
-            condition = 'نیمه‌ابری';
-            icon = 'cloud-sun';
-          } else if (code >= 45 && code <= 48) {
-            condition = 'مه‌آلود';
-            icon = 'cloud';
-          } else if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) {
-            condition = 'بارانی';
-            icon = 'rain';
-          } else if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) {
-            condition = 'برفی';
-            icon = 'snow';
-          } else if (code >= 95 && code <= 99) {
-            condition = 'رعد و برق';
-            icon = 'thunder';
-          }
-
+          if (code === 0) { condition = 'صاف و آفتابی'; icon = 'sun'; }
+          else if (code >= 1 && code <= 3) { condition = 'نیمه‌ابری'; icon = 'cloud-sun'; }
+          else if (code >= 45 && code <= 48) { condition = 'مه‌آلود'; icon = 'cloud'; }
+          else if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) { condition = 'بارانی'; icon = 'rain'; }
+          else if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) { condition = 'برفی'; icon = 'snow'; }
+          else if (code >= 95 && code <= 99) { condition = 'رعد و برق'; icon = 'thunder'; }
           setWeather({ temp: `${temp}°C`, condition, icon });
         }
       } catch {
-        // در صورت عدم دسترسی شبکه
         setWeather({ temp: '--', condition: 'عدم ارتباط', icon: 'cloud' });
       }
     }
-
     fetchWeather();
-    const interval = setInterval(fetchWeather, 30 * 60 * 1000); // به‌روزرسانی هر ۳۰ دقیقه
+    const interval = setInterval(fetchWeather, 30 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -152,92 +126,102 @@ export default function Header({
   const RoleIcon = roleConfig?.icon || User;
 
   return (
-    <header className="shrink-0 px-4 py-2.5 rounded-2xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.08)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.3)] transition-all duration-300">
-      <div className="flex items-center justify-between gap-4">
-        
-        {/* ۱. لوگو و عنوان */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="w-10 h-10 rounded-2xl bg-white shadow-sm border border-slate-200/50 p-1 flex items-center justify-center overflow-hidden">
-            <Image src="/logo.png" alt="لوگوی باما" width={32} height={32} className="w-full h-full object-contain" priority />
-          </div>
-          <div className="flex flex-col">
-            <h1 className="text-sm font-black text-slate-800 dark:text-white tracking-tight">پورتال سازمانی باما</h1>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 hidden sm:block">پیشخوان خدمات درون‌سازمانی</p>
-          </div>
-        </div>
-
-        {/* ۲. نوار جستجو */}
-        <div className="flex-1 max-w-sm mx-2">
-          <div className="relative flex items-center group">
-            <Search size={15} className="absolute right-3.5 text-slate-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="جستجو..."
-              className="w-full pr-10 pl-4 py-2 text-xs rounded-xl bg-white/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-white/10 outline-none focus:ring-2 focus:ring-cyan-500/40 text-slate-800 dark:text-slate-100 placeholder-slate-400 transition-all"
-            />
-          </div>
-        </div>
-
-        {/* ۳. ویجت‌های زمان و آب و هوا (نمایش در دسکتاپ) */}
-        <div className="hidden md:flex items-center gap-2 shrink-0">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-white/10">
-            <Clock size={14} className="text-cyan-500" />
-            <div className="flex flex-col leading-tight text-right">
-              <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 tabular-nums">{mounted ? time : '--:--'}</span>
-              <span className="text-[9px] text-slate-500 dark:text-slate-400">{mounted ? dateStr : ''}</span>
+    <>
+      <header className="shrink-0 px-4 py-2.5 rounded-2xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.08)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.3)] transition-all duration-300">
+        <div className="flex items-center justify-between gap-4">
+          
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-white shadow-sm border border-slate-200/50 p-1 flex items-center justify-center overflow-hidden">
+              <Image src="/logo.png" alt="لوگوی باما" width={32} height={32} className="w-full h-full object-contain" priority />
+            </div>
+            <div className="flex flex-col">
+              <h1 className="text-sm font-black text-slate-800 dark:text-white tracking-tight">پورتال سازمانی باما</h1>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 hidden sm:block">پیشخوان خدمات درون‌سازمانی</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-white/10">
-            {renderWeatherIcon()}
-            <div className="flex flex-col leading-tight text-right">
-              <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200">{weather.temp}</span>
-              <span className="text-[9px] text-slate-500 dark:text-slate-400">{weather.condition}</span>
+
+          <div className="flex-1 max-w-sm mx-2">
+            <div className="relative flex items-center group">
+              <Search size={15} className="absolute right-3.5 text-slate-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="جستجو..."
+                className="w-full pr-10 pl-4 py-2 text-xs rounded-xl bg-white/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-white/10 outline-none focus:ring-2 focus:ring-cyan-500/40 text-slate-800 dark:text-slate-100 placeholder-slate-400 transition-all"
+              />
             </div>
           </div>
-        </div>
 
-        {/* ۴. بخش ابزارها و کاربر */}
-        <div className="flex items-center gap-2 shrink-0">
-          <button onClick={toggleTheme} className="p-2 rounded-xl bg-white/50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:scale-105 transition-transform">
-            {isDark ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
-
-          {/* دکمه مدیریت کاربران (نمایش شرطی) */}
-          {canManageUsers && (
-            <button 
-              onClick={onOpenUserManagement}
-              className="p-2 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/20 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 hover:scale-105 transition-transform"
-              title="مدیریت کاربران"
-            >
-              <Users size={16} />
-            </button>
-          )}
-
-          {user ? (
-            <div className="flex items-center p-1 rounded-2xl bg-white/60 dark:bg-slate-950/60 border border-slate-200/80 dark:border-white/10 backdrop-blur-lg">
-              <div className="flex items-center gap-2 px-2 py-0.5">
-                <div className={`w-8 h-8 rounded-xl bg-linear-to-tr ${roleConfig?.avatarGradient} flex items-center justify-center text-white text-xs font-black shadow-md`}>
-                  {user.fullName?.charAt(0)}
-                </div>
-                <div className="flex flex-col text-right leading-tight">
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{user.fullName}</span>
-                  <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 rounded-md border ${roleConfig?.badgeColor}`}>
-                    <RoleIcon size={10} /> {roleConfig?.title}
-                  </span>
-                </div>
+          <div className="hidden md:flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-white/10">
+              <Clock size={14} className="text-cyan-500" />
+              <div className="flex flex-col leading-tight text-right">
+                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 tabular-nums">{mounted ? time : '--:--'}</span>
+                <span className="text-[9px] text-slate-500 dark:text-slate-400">{mounted ? dateStr : ''}</span>
               </div>
-              <div className="h-6 w-px bg-slate-200 dark:bg-white/10 mx-1" />
-              <button onClick={logout} className="p-2 rounded-xl text-slate-400 hover:text-rose-500 transition-all">
-                <LogOut size={16} />
-              </button>
             </div>
-          ) : (
-            <button onClick={onOpenLogin} className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-cyan-600 hover:bg-cyan-500 transition-all shadow-md shadow-cyan-600/20">ورود</button>
-          )}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-white/10">
+              {renderWeatherIcon()}
+              <div className="flex flex-col leading-tight text-right">
+                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200">{weather.temp}</span>
+                <span className="text-[9px] text-slate-500 dark:text-slate-400">{weather.condition}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button onClick={toggleTheme} className="p-2 rounded-xl bg-white/50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:scale-105 transition-transform">
+              {isDark ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+
+            {/* ۲. دکمه باز کردن مودال مدیریت کاربران */}
+            {canManageUsers && (
+              <button 
+                onClick={onOpenUserModal} 
+                className="p-2 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/20 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 hover:scale-105 transition-transform"
+                title="مدیریت کاربران"
+              >
+                <Users size={16} />
+              </button>
+            )}
+
+            {user ? (
+              <div className="flex items-center p-1 rounded-2xl bg-white/60 dark:bg-slate-950/60 border border-slate-200/80 dark:border-white/10 backdrop-blur-lg">
+                <div className="flex items-center gap-2 px-2 py-0.5">
+                  <div className={`w-8 h-8 rounded-xl bg-linear-to-tr ${roleConfig?.avatarGradient} flex items-center justify-center text-white text-xs font-black shadow-md`}>
+                    {user.fullName?.charAt(0)}
+                  </div>
+                  <div className="flex flex-col text-right leading-tight">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{user.fullName}</span>
+                    <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 rounded-md border ${roleConfig?.badgeColor}`}>
+                      <RoleIcon size={10} /> {roleConfig?.title}
+                    </span>
+                  </div>
+                </div>
+                <div className="h-6 w-px bg-slate-200 dark:bg-white/10 mx-1" />
+                <button
+                  onClick={async () => {
+                    await logout();
+                    showToast('با موفقیت از حساب خارج شدید.', 'success');
+                  }}
+                  className="p-2 rounded-xl text-slate-400 hover:text-rose-500 transition-all"
+                >
+                  <LogOut size={16} />
+                </button>
+              </div>
+            ) : (
+              <button onClick={onOpenLogin} className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-cyan-600 hover:bg-cyan-500 transition-all shadow-md shadow-cyan-600/20">ورود</button>
+            )}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* ۳. رندر مودال در درخت رندر */}
+      <UserManagementModal 
+        isOpen={isUserModalOpen} 
+        onClose={() => setIsUserModalOpen(false)} 
+      />
+    </>
   );
 }

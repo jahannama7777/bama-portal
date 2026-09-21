@@ -11,6 +11,7 @@ import AppEditModal from "@/src/components/widgets/AppEditModal";
 import { Plus } from "lucide-react";
 import { useApps } from "../context/AppsContext";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 
 export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -19,8 +20,9 @@ export default function Home() {
   const [editingApp, setEditingApp] = useState(null);
 
   const { apps = [], addApp, updateApp, deleteApp } = useApps();
-  const { isAdmin, isSuperAdmin } = useAuth();
-  const canManage = Boolean(isAdmin || isSuperAdmin);
+  const { user, can, canAccessApp, isGuest } = useAuth();
+  const { showToast } = useToast();
+  const canManage = can.manageApps(user);
 
   useEffect(() => {
     console.log(
@@ -33,8 +35,17 @@ export default function Home() {
     );
   }, []);
 
-  const handleAddNewApp = () => {
-    const newId = addApp();
+  const handleDeleteApp = (id) => {
+    const target = apps.find((a) => a.id === id || String(a.id) === String(id));
+    deleteApp(id);
+    showToast(
+      `سامانه «${target?.titleFa || target?.title || "سامانه"}» حذف شد.`,
+      "success",
+    );
+  };
+
+  const handleAddNewApp = async () => {
+    const newId = await addApp();
     if (newId) {
       const newApp = apps.find((a) => a.id === newId) || {
         id: newId,
@@ -45,11 +56,15 @@ export default function Home() {
         icon: "Globe",
       };
       setEditingApp(newApp);
+    } else {
+      showToast("خطا در ایجاد سامانه جدید. لطفاً دوباره تلاش کنید.", "error");
     }
   };
 
-  // فیلتر کردن کارت‌ها بر اساس جستجوی هدر
+  // فیلتر بر اساس نقش + جستجو (GUEST / بدون لاگین → بدون سامانه)
   const filteredApps = (apps || []).filter((app) => {
+    if (!canAccessApp(app)) return false;
+
     const term = searchTerm.toLowerCase().trim();
     if (!term) return true;
 
@@ -116,14 +131,18 @@ export default function Home() {
                           );
                           if (target) setEditingApp(target);
                         }}
-                        onDelete={deleteApp}
+                        onDelete={handleDeleteApp}
                       />
                     ))}
                   </div>
                 ) : (
                   <div className="h-40 flex items-center justify-center border border-dashed border-white/20 rounded-xl bg-black/20 backdrop-blur-sm">
                     <p className="text-xs text-slate-200">
-                      سامانه‌ای با عنوان «{searchTerm}» پیدا نشد.
+                      {isGuest || !user
+                        ? "برای مشاهده سامانه‌ها وارد حساب کاربری شوید."
+                        : searchTerm
+                          ? `سامانه‌ای با عنوان «${searchTerm}» پیدا نشد.`
+                          : "سامانه‌ای برای نقش شما تعریف نشده است."}
                     </p>
                   </div>
                 )}

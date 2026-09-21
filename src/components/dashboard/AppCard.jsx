@@ -86,7 +86,7 @@ export default function AppCard({
 
   return (
     <div
-      className="group relative flex flex-col justify-between p-3.5 transition-all duration-300 select-none hover:-translate-y-0.5 rounded-xl overflow-hidden hover:bg-white/10 dark:hover:bg-white/[0.04]"
+      className="group relative flex flex-col justify-between p-3.5 transition-all duration-300 select-none hover:-translate-y-0.5 rounded-xl overflow-hidden hover:bg-white/10 dark:hover:bg-white/4"
       dir="rtl"
     >
       {/* تعریف انیمیشن برق زدن ۳ ثانیه‌ای */}

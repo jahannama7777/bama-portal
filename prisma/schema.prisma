@@ -7,16 +7,64 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// ---------------------- ENUMS ----------------------
+
+enum Role {
+  SUPERADMIN
+  ADMIN
+  SUPERVISOR
+  USER
+  GUEST
+}
+
+enum FeedbackStatus {
+  PENDING
+  APPROVED
+  REVIEWED
+}
+
+enum DevicePlatform {
+  IOS
+  ANDROID
+  WEB
+}
+
+/// Who a notification is addressed to.
+/// GROUP was replaced by ROLE / DEPARTMENT for precise targeting.
+enum NotificationTarget {
+  INDIVIDUAL
+  ROLE
+  DEPARTMENT
+  ALL
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+// ---------------------- MODELS ----------------------
+
 model User {
-  id            Int            @id @default(autoincrement())
-  username      String         @unique
-  fullName      String
-  department    String?        @default("فناوری اطلاعات")
-  password      String
-  role          String         @default("USER") // USER, ADMIN, SUPERADMIN
-  createdAt     DateTime       @default(now())
-  notifications Notification[]
-  sessions      Session[]
+  id             Int              @id @default(autoincrement())
+  username       String           @unique
+  fullName       String
+  department     String?          @default("فناوری اطلاعات")
+  password       String
+  role           Role             @default(USER)
+  createdAt      DateTime         @default(now())
+
+  // Relations
+  sessions                 Session[]
+  feedbacks                Feedback[]
+  announcements            Announcement[]
+  deviceTokens             DeviceToken[]
+  permissions              UserPermission[]
+  appAccess                UserAppAccess[]
+  notificationsCreated     Notification[]        @relation("NotificationCreatedBy")
+  notificationsTargeted    Notification[]        @relation("NotificationTargetUser")
+  notificationReceipts     NotificationReceipt[]
 }
 
 model Session {
@@ -36,10 +84,13 @@ model Application {
   icon      String
   url       String
   href      String?
-  roles     String   @default("[\"USER\",\"ADMIN\",\"SUPERADMIN\"]")
+  /// JSON array of Role values allowed to see this app, e.g. ["USER","ADMIN"]
+  roles     String   @default("[\"USER\",\"ADMIN\",\"SUPERADMIN\",\"SUPERVISOR\"]")
   order     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  userAccess UserAppAccess[]
 }
 
 model Notification {
@@ -47,12 +98,126 @@ model Notification {
   title       String
   desc        String
   date        String
-  type        String   @default("info") // info, warning, success, danger
-  badge       String?  @default("اطلاعیه")
+  type        String   @default("info")
+  badge       String   @default("اطلاعیه")
   badgeColor  String   @default("blue")
+  /// Legacy department label for UI; prefer targetDepartment when targetType = DEPARTMENT
+  department  String?
   createdAt   DateTime @default(now())
+
+  /// Targeting (foundation for web + future mobile fan-out)
+  targetType       NotificationTarget @default(ALL)
+  targetUserId     Int?
+  targetRole       Role?
+  targetDepartment String?
+
   createdById Int?
-  createdBy   User?    @relation(fields: [createdById], references: [id])
+  createdBy   User? @relation("NotificationCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  targetUser  User? @relation("NotificationTargetUser", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  logs     NotificationLog[]
+  receipts NotificationReceipt[]
+}
+
+/// Per-user delivery / read state (mobile-ready inbox)
+model NotificationReceipt {
+  id             Int       @id @default(autoincrement())
+  notificationId Int
+  userId         Int
+  deliveredAt    DateTime?
+  readAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, userId])
+  @@index([userId])
+}
+
+model Feedback {
+  id             Int            @id @default(autoincrement())
+  content        String
+  announcementId Int?
+  userId         Int
+  status         FeedbackStatus @default(PENDING)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  announcement Announcement? @relation(fields: [announcementId], references: [id])
+  user         User          @relation(fields: [userId], references: [id])
+}
+
+model Announcement {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  authorId  Int
+  priority  Int      @default(0)
+  tags      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author   User       @relation(fields: [authorId], references: [id])
+  feedback Feedback[]
+}
+
+model DeviceToken {
+  id         Int            @id @default(autoincrement())
+  userId     Int
+  token      String
+  platform   DevicePlatform
+  deviceId   String
+  lastUsedAt DateTime       @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceId])
+}
+
+/// Push / delivery attempt log (queue foundation for FCM/APNs later)
+model NotificationLog {
+  id             Int                @id @default(autoincrement())
+  notificationId Int?
+  title          String
+  body           String
+  targetType     NotificationTarget
+  /// Canonical target key: "user:12" | "role:ADMIN" | "department:IT" | "all"
+  targetKey      String
+  status         NotificationStatus @default(PENDING)
+  errorMessage   String?
+  sentAt         DateTime           @default(now())
+
+  notification Notification? @relation(fields: [notificationId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([targetKey])
+}
+
+/// Fine-grained overrides (grant or deny beyond role defaults)
+model UserPermission {
+  id       Int     @id @default(autoincrement())
+  userId   Int
+  action   String
+  resource String
+  granted  Boolean
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, action, resource])
+}
+
+/// Per-user app allow/deny (Admin restrictions)
+model UserAppAccess {
+  id      Int     @id @default(autoincrement())
+  userId  Int
+  appId   Int
+  allowed Boolean @default(true)
+
+  user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  app  Application @relation(fields: [appId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, appId])
 }
 
 model Stat {

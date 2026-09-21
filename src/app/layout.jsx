@@ -1,10 +1,11 @@
 import localFont from "next/font/local";
 import "./globals.css";
-
+import ToastContainer from "@/src/components/ui/ToastContainer";
 import { AuthProvider } from "@/src/context/AuthContext";
 import { NotificationProvider } from "@/src/context/NotificationContext";
 import { StatsProvider } from "@/src/context/StatsContext";
 import { AppsProvider } from "@/src/context/AppsContext";
+import { ToastProvider } from "@/src/context/ToastContext";
 
 const vazir = localFont({
   src: [
@@ -79,13 +80,18 @@ export default function RootLayout({ children }) {
       className={`${vazir.variable} ${yekan.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-slate-50 font-sans text-slate-800 selection:bg-cyan-500 selection:text-white transition-colors duration-200 dark:bg-[#070c18] dark:text-slate-100">
-        <AuthProvider>
-          <NotificationProvider>
-            <StatsProvider>
-              <AppsProvider>{children}</AppsProvider>
-            </StatsProvider>
-          </NotificationProvider>
-        </AuthProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <NotificationProvider>
+              <StatsProvider>
+                <AppsProvider>
+                  {children}
+                  <ToastContainer />
+                </AppsProvider>
+              </StatsProvider>
+            </NotificationProvider>
+          </AuthProvider>
+        </ToastProvider>
       </body>
     </html>
   );

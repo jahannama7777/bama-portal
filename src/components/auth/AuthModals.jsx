@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/src/context/AuthContext";
+import { useToast } from "@/src/context/ToastContext";
 import { loginAction, createUserAction, getUsersAction } from "@/src/app/actions/authActions";
 
 export default function AuthModals() {
@@ -15,10 +16,10 @@ export default function AuthModals() {
     setIsUserManagementOpen,
   } = useAuth();
 
-  const [loginError, setLoginError] = useState("");
+  const { showToast } = useToast();
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [usersList, setUsersList] = useState([]);
-  const [newUserMsg, setNewUserMsg] = useState("");
 
   useEffect(() => {
     if (isUserManagementOpen && isAdmin) {
@@ -29,7 +30,6 @@ export default function AuthModals() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setLoginError("");
     const formData = new FormData(e.target);
     const res = await loginAction(formData);
     setIsSubmitting(false);
@@ -37,25 +37,25 @@ export default function AuthModals() {
     if (res.success) {
       setUser(res.user);
       setIsLoginModalOpen(false);
+      showToast("با موفقیت وارد شدید", "success");
     } else {
-      setLoginError(res.message);
+      showToast(res.message, "error");
     }
   };
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
-    setNewUserMsg("");
     const form = e.target;
     const formData = new FormData(form);
     const res = await createUserAction(formData);
 
     if (res.success) {
-      setNewUserMsg("کاربر جدید با موفقیت اضافه شد.");
+      showToast("کاربر جدید با موفقیت اضافه شد.", "success");
       form.reset();
       const updated = await getUsersAction();
       setUsersList(updated);
     } else {
-      setNewUserMsg(res.message);
+      showToast(res.message, "error");
     }
   };
 
@@ -95,8 +95,6 @@ export default function AuthModals() {
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
                 />
               </div>
-
-              {loginError && <div className="text-rose-400 text-xs">{loginError}</div>}
 
               <button
                 type="submit"
@@ -146,7 +144,6 @@ export default function AuthModals() {
               </div>
 
               <div className="md:col-span-2 flex items-center justify-between mt-2">
-                {newUserMsg && <span className="text-xs text-cyan-400">{newUserMsg}</span>}
                 <button type="submit" className="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-lg text-sm font-medium mr-auto">
                   + ایجاد کاربر
                 </button>

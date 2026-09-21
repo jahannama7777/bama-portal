@@ -29,12 +29,7 @@ export default function WelcomeBanner() {
   const { apps = [] } = useApps(); // ← لیست زنده تمام سامانه‌ها
   const auth = useAuth?.() || {};
 
-  const canManage =
-    auth?.isAdmin ||
-    auth?.isSuperAdmin ||
-    auth?.user?.role === "ADMIN" ||
-    auth?.user?.role === "SUPERADMIN" ||
-    true;
+  const canManage = auth?.can?.manageApps?.(auth.user) ?? false;
 
   const [selectedStat, setSelectedStat] = useState(null);
 

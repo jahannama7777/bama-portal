@@ -3,6 +3,7 @@
 import prisma from "@/src/lib/prisma";
 import crypto from "crypto";
 import { cookies } from "next/headers";
+import { can, canCreateRole } from "@/lib/rbac";
 
 // هش کردن پسورد
 function hashPassword(password) {
@@ -170,7 +171,7 @@ export async function logoutAction() {
 export async function createUserAction(formData) {
   const session = await getSessionAction();
 
-  if (!session || (session.role !== "SUPERADMIN" && session.role !== "ADMIN")) {
+  if (!can.manageUsers(session)) {
     return {
       success: false,
       message: "عدم دسترسی کافی برای ایجاد کاربر.",
@@ -187,6 +188,13 @@ export async function createUserAction(formData) {
     return {
       success: false,
       message: "فیلدهای اجباری را تکمیل کنید.",
+    };
+  }
+
+  if (!canCreateRole(session, role)) {
+    return {
+      success: false,
+      message: "مجاز به ایجاد این نقش نیستید.",
     };
   }
 
@@ -227,7 +235,7 @@ export async function createUserAction(formData) {
 export async function deleteUserAction(userId) {
   const session = await getSessionAction();
 
-  if (!session || session.role !== "SUPERADMIN") {
+  if (!can.isSuperAdmin(session)) {
     return {
       success: false,
       message: "فقط سوپرادمین اجازه حذف کاربر را دارد.",
@@ -261,7 +269,7 @@ export async function deleteUserAction(userId) {
 export async function getUsersAction() {
   const session = await getSessionAction();
 
-  if (!session || (session.role !== "SUPERADMIN" && session.role !== "ADMIN")) {
+  if (!can.manageUsers(session)) {
     return [];
   }
 
