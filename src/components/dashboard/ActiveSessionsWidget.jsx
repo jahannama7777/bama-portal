@@ -5,12 +5,15 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { Users, Monitor, LogOut, RefreshCw, ShieldCheck } from "lucide-react";
+import { Users, Monitor, LogOut, RefreshCw, AlertTriangle, X } from "lucide-react";
 
 export default function ActiveSessionsWidget() {
   const [data, setData] = useState({ onlineUsersCount: 0, totalActiveSessions: 0, users: [] });
   const [loading, setLoading] = useState(true);
   const [terminatingId, setTerminatingId] = useState(null);
+  
+  // مدیریت حالت مدال سفارشی
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, user: null });
 
   const fetchSessions = useCallback(async () => {
     try {
@@ -32,11 +35,21 @@ export default function ActiveSessionsWidget() {
     return () => clearInterval(interval);
   }, [fetchSessions]);
 
-  const handleKickUser = async (userId, userName) => {
-    if (!confirm(`آیا از بستن تمام نشست‌های کاربر «${userName}» مطمئن هستید؟`)) return;
-    setTerminatingId(userId);
+  // باز کردن مدال تایید سفارشی
+  const promptKickUser = (userObj) => {
+    setConfirmModal({ isOpen: true, user: userObj });
+  };
+
+  // اجرای عملیات اخراج پس از تایید در مدال
+  const handleConfirmKick = async () => {
+    const targetUser = confirmModal.user;
+    if (!targetUser) return;
+
+    setTerminatingId(targetUser.id);
+    setConfirmModal({ isOpen: false, user: null });
+
     try {
-      const res = await fetch(`/api/admin/active-sessions?userId=${userId}`, {
+      const res = await fetch(`/api/admin/active-sessions?userId=${targetUser.id}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -51,7 +64,7 @@ export default function ActiveSessionsWidget() {
   };
 
   return (
-    <div className="bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-2xl p-4 shadow-xl text-slate-100 font-sans">
+    <div className="bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-2xl p-4 shadow-xl text-slate-100 font-sans relative">
       {/* سربرگ */}
       <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
         <div className="flex items-center gap-2.5">
@@ -72,14 +85,14 @@ export default function ActiveSessionsWidget() {
             fetchSessions();
           }}
           title="بروزرسانی لیست"
-          className="p-1.5 text-slate-400 hover:text-white bg-slate-800/60 rounded-lg hover:bg-slate-800 transition"
+          className="p-1.5 text-slate-400 hover:text-white bg-slate-800/60 rounded-lg hover:bg-slate-800 transition cursor-pointer"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-emerald-400" : ""}`} />
         </button>
       </div>
 
       {/* لیست سشن‌ها */}
-      <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+      <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
         {loading && data.users.length === 0 ? (
           <div className="text-center py-6 text-xs text-slate-400 animate-pulse">
             در حال بارگذاری وضعیت نشست‌ها...
@@ -123,10 +136,10 @@ export default function ActiveSessionsWidget() {
 
               {/* دکمه اخراج / بستن سشن */}
               <button
-                onClick={() => handleKickUser(user.id, user.fullName || user.username)}
+                onClick={() => promptKickUser(user)}
                 disabled={terminatingId === user.id}
                 title="قطع دسترسی و خروج کاربر"
-                className="opacity-0 group-hover:opacity-100 transition p-1.5 text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 rounded-lg text-xs flex items-center gap-1"
+                className="opacity-0 group-hover:opacity-100 transition p-1.5 text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 rounded-lg text-xs flex items-center gap-1 cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">اخراج</span>
@@ -135,6 +148,45 @@ export default function ActiveSessionsWidget() {
           ))
         )}
       </div>
+
+      {/* مدال تایید سفارشی (مشابه مدال‌های سیستم) */}
+      {confirmModal.isOpen && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm rounded-2xl p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 max-w-xs w-full shadow-2xl text-center space-y-4">
+            <div className="mx-auto w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+
+            <div>
+              <h4 className="font-bold text-sm text-white mb-1">قطع دسترسی کاربر</h4>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                آیا از بستن تمام نشست‌های فعال کاربر{" "}
+                <span className="text-rose-400 font-bold">
+                  «{confirmModal.user?.fullName || confirmModal.user?.username}»
+                </span>{" "}
+                اطمینان دارید؟
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmModal({ isOpen: false, user: null })}
+                className="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
+              >
+                انصراف
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmKick}
+                className="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition shadow-lg shadow-rose-900/30 cursor-pointer"
+              >
+                بله، قطع دسترسی
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
