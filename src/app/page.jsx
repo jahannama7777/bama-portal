@@ -173,10 +173,10 @@ export default function Home() {
 
   return (
     <div
-      className="relative min-h-screen overflow-x-hidden flex items-center justify-center p-3 md:p-6 lg:p-8 font-sans select-none text-slate-800 dark:text-slate-100 transition-colors duration-300"
+      className="relative min-h-[100dvh] overflow-x-hidden flex items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8 font-sans select-none text-slate-800 dark:text-slate-100 transition-colors duration-300"
       dir="rtl"
     >
-      {/* پس‌زمینه: عکس صنعتی باما با لایه نرم شیشه‌ای */}
+      {/* پس‌زمینه: عکس صنعتی باما با لایه شیشه‌ای */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <Image
           src="/mine.png"
@@ -188,9 +188,9 @@ export default function Home() {
         <div className="absolute inset-0 bg-linear-to-tr from-sky-100/50 via-white/30 to-slate-200/40 dark:from-slate-950/70 dark:via-slate-900/50 dark:to-slate-950/70" />
       </div>
 
-      {/* کانتینر اصلی داشبورد */}
-      <div className="relative z-10 flex flex-col w-full max-w-7xl min-h-125 max-h-[85vh] bg-white/50 dark:bg-slate-900/40 backdrop-blur-md rounded-3xl border border-white/70 dark:border-white/10 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.7)] overflow-hidden transition-all duration-300">
-        <div className="flex-1 min-h-0 flex flex-col gap-3">
+      {/* کانتینر اصلی داشبورد (واکنش‌گرا برای ارتفاع موبایل با 92dvh) */}
+      <div className="relative z-10 flex flex-col w-full max-w-7xl h-[92dvh] md:h-[85vh] bg-white/50 dark:bg-slate-900/40 backdrop-blur-md rounded-2xl md:rounded-3xl border border-white/70 dark:border-white/10 p-3 md:p-4 shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.7)] overflow-hidden transition-all duration-300">
+        <div className="flex-1 min-h-0 flex flex-col gap-2.5 md:gap-3">
           {/* هدر */}
           <div className="shrink-0">
             <Header
@@ -201,19 +201,19 @@ export default function Home() {
             />
           </div>
 
-          {/* بدنه داشبورد */}
-          <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch overflow-hidden">
+          {/* بدنه داشبورد: سایدبار در موبایل می‌رود پایین (order-2) و سامانه‌ها اولویت دید هستند (order-1) */}
+          <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-2.5 md:gap-3 items-stretch overflow-hidden">
+            
             {/* ستون سایدبار و ویجت‌ها */}
-            <div className="lg:col-span-3 h-full min-h-0 flex flex-col">
+            <div className="w-full lg:w-72 shrink-0 h-auto lg:h-full min-h-0 flex flex-col order-2 lg:order-1">
               <SidebarWidgets appCount={finalDisplayApps.length} />
             </div>
 
-            {/* محفظه نمایش کارت‌های سامانه‌ها: شفاف و شیشه‌ای */}
-            <div className="lg:col-span-9 flex flex-col h-full min-h-0 bg-white/20 dark:bg-slate-900/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30 dark:border-white/10 shadow-inner transition-colors duration-300">
-              {/* گرید سامانه‌ها همراه با Drag & Drop */}
+            {/* محفظه نمایش کارت‌های سامانه‌ها */}
+            <div className="flex-1 min-h-0 flex flex-col bg-white/20 dark:bg-slate-900/20 backdrop-blur-sm rounded-xl md:rounded-2xl p-2.5 md:p-4 border border-white/30 dark:border-white/10 shadow-inner transition-colors duration-300 order-1 lg:order-2">
               <div className="flex-1 min-h-0 overflow-y-auto pr-1 custom-scrollbar">
                 {finalDisplayApps.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3 pb-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-3 pb-2">
                     {finalDisplayApps.map((app, index) => (
                       <AppCard
                         key={app.id ?? `app-${index}`}
@@ -251,15 +251,15 @@ export default function Home() {
 
         {/* دکمه شناور افزودن سامانه جدید */}
         {canManage && (
-          <div className="absolute left-6 bottom-6 z-40 group">
+          <div className="absolute left-4 bottom-4 md:left-6 md:bottom-6 z-40 group">
             <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full blur-md opacity-50 group-hover:opacity-85 transition duration-500 group-hover:scale-110 pointer-events-none" />
 
             <button
               onClick={handleAddNewApp}
               type="button"
-              className="animate-pulse relative flex items-center justify-center w-12 h-12 rounded-full bg-cyan-600/85 hover:bg-cyan-500 dark:bg-cyan-500/40 dark:hover:bg-cyan-500/60 backdrop-blur-xl border border-white/40 dark:border-cyan-300/40 text-white shadow-[0_8px_30px_rgb(0,0,0,0.25)] transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer"
+              className="animate-pulse relative flex items-center justify-center w-11 h-11 md:w-12 md:h-12 rounded-full bg-cyan-600/85 hover:bg-cyan-500 dark:bg-cyan-500/40 dark:hover:bg-cyan-500/60 backdrop-blur-xl border border-white/40 dark:border-cyan-300/40 text-white shadow-[0_8px_30px_rgb(0,0,0,0.25)] transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer"
             >
-              <Plus size={24} strokeWidth={2.5} />
+              <Plus size={22} strokeWidth={2.5} />
             </button>
 
             <div className="pointer-events-none absolute left-14 top-1/2 -translate-y-1/2 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 px-3 py-1.5 rounded-xl bg-slate-950/90 backdrop-blur-md border border-white/10 text-white text-xs font-bold whitespace-nowrap shadow-xl">
