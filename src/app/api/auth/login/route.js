@@ -1,73 +1,107 @@
-import { NextResponse } from 'next/server';
-import prisma from '@/src/lib/prisma';
-import crypto from 'crypto';
+/**
+ * File: src/app/api/auth/login/route.js
+ *
+ * اصلاحات نسبت به نسخه قبلی:
+ *  1. مقایسه متن ساده رمز (`user.password === password`) حذف شد — حفره امنیتی جدی.
+ *  2. bcrypt جایگزین SHA-256 شد، با ارتقای خودکار رمزهای قدیمی.
+ *  3. به‌جای ریختن کل آبجکت کاربر داخل کوکی، یک Session واقعی در دیتابیس ساخته
+ *     می‌شود و فقط توکن در کوکی bama_session_token قرار می‌گیرد — دقیقاً همان
+ *     استراتژی‌ای که authActions.js استفاده می‌کند. بنابراین هر دو مسیر ورود
+ *     (Server Action و REST) به یک سشن واحد می‌رسند.
+ */
 
-function hashPassword(password) {
-  return crypto
-    .createHash('sha256')
-    .update(password + 'BAMA_SECRET_KEY')
-    .digest('hex');
-}
+import { NextResponse } from "next/server";
+import crypto from "crypto";
+import { prisma } from "@/src/lib/prisma";
+import { verifyPassword, hashPassword } from "@/src/lib/password";
+import { SESSION_TOKEN_COOKIE, SESSION_JSON_COOKIE } from "@/src/lib/session";
+
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // ۷ روز
 
 export async function POST(req) {
   try {
-    const body = await req.json();
-    const username = body?.username?.trim();
-    const password = body?.password?.trim();
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, message: "بدنه درخواست معتبر نیست." },
+        { status: 400 },
+      );
+    }
+
+    const username = String(body?.username || "").trim();
+    const password = String(body?.password || "").trim();
 
     if (!username || !password) {
       return NextResponse.json(
-        { success: false, error: 'نام کاربری و کلمه عبور الزامی است.' },
-        { status: 400 }
+        { success: false, message: "نام کاربری و کلمه عبور الزامی است." },
+        { status: 400 },
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { username }
+    const user = await prisma.user.findUnique({ where: { username } });
+
+    // پیام یکسان برای «کاربر نیست» و «رمز غلط» تا اطلاعات لو نرود
+    const invalid = NextResponse.json(
+      { success: false, message: "نام کاربری یا رمز عبور اشتباه است." },
+      { status: 401 },
+    );
+
+    if (!user) return invalid;
+
+    const { ok, needsRehash } = await verifyPassword(password, user.password);
+    if (!ok) return invalid;
+
+    // ارتقای شفاف رمزهای SHA-256 قدیمی به bcrypt
+    if (needsRehash) {
+      await prisma.user
+        .update({
+          where: { id: user.id },
+          data: { password: await hashPassword(password) },
+        })
+        .catch(() => {});
+    }
+
+    const sessionToken = crypto.randomBytes(48).toString("hex");
+    const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
+
+    // پاکسازی سشن‌های منقضی همان کاربر
+    await prisma.session
+      .deleteMany({ where: { userId: user.id, expiresAt: { lt: new Date() } } })
+      .catch(() => {});
+
+    await prisma.session.create({
+      data: { token: sessionToken, userId: user.id, expiresAt },
     });
 
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'کاربری با این مشخصات یافت نشد.' },
-        { status: 401 }
-      );
-    }
+    const safeUser = {
+      id: user.id,
+      username: user.username,
+      fullName: user.fullName,
+      department: user.department,
+      role: user.role,
+    };
 
-    const hashedInput = hashPassword(password);
+    const res = NextResponse.json({ success: true, user: safeUser });
 
-    // بررسی هم با هش‌شده و هم متن ساده (جهت سهولت توسعه)
-    const isMatch = (user.password === hashedInput) || (user.password === password);
-
-    if (!isMatch) {
-      return NextResponse.json(
-        { success: false, error: 'کلمه عبور وارد شده اشتباه است.' },
-        { status: 401 }
-      );
-    }
-
-    // حذف پسورد از خروجی امن
-    const { password: _, ...safeUser } = user;
-
-    const res = NextResponse.json({
-      success: true,
-      user: safeUser
-    });
-
-    // ست کردن کوکی استاندارد جهت اعتبارسنجی
-    res.cookies.set('bama_auth_session', JSON.stringify(safeUser), {
+    res.cookies.set(SESSION_TOKEN_COOKIE, sessionToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7 // ۷ روز
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      expires: expiresAt,
     });
+
+    // کوکی JSON قدیمی اگر باقی مانده باشد پاک می‌شود تا دو منبع حقیقت نداشته باشیم
+    res.cookies.delete(SESSION_JSON_COOKIE);
 
     return res;
   } catch (error) {
-    console.error('Login error:', error);
+    console.error("POST /api/auth/login Error:", error);
     return NextResponse.json(
-      { success: false, error: 'خطای سرور در فرایند ورود.' },
-      { status: 500 }
+      { success: false, message: "خطای سرور در فرایند ورود." },
+      { status: 500 },
     );
   }
 }

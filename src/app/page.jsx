@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import Header from "../components/header/Header";
 import AppCard from "../components/dashboard/AppCard";
@@ -22,7 +22,36 @@ export default function Home() {
   const { apps = [], addApp, updateApp, deleteApp } = useApps();
   const { user, can, canAccessApp, isGuest } = useAuth();
   const { showToast } = useToast();
-  const canManage = can.manageApps(user);
+
+  const canManage = Boolean(can?.manageApps && can.manageApps(user));
+
+  // کلید اختصاصی کش در مرورگر برای تفکیک چیدمان هر کاربر یا حالت مهمان
+  const storageKey = user?.id
+    ? `bama_app_order_u${user.id}`
+    : "bama_app_order_guest";
+
+  // آرایه شناسه آیکون‌ها برای مدیریت چیدمان Drag & Drop
+  const [customOrder, setCustomOrder] = useState([]);
+
+  const dragItem = useRef(null);
+  const dragOverItem = useRef(null);
+
+  // لود ترتیب ذخیره‌شده کاربر از localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setCustomOrder(parsed);
+          return;
+        }
+      }
+    } catch {
+      // نادیده‌گرفتن خطای ذخیره‌سازی محلی مرورگر
+    }
+    setCustomOrder([]);
+  }, [storageKey]);
 
   useEffect(() => {
     console.log(
@@ -36,11 +65,13 @@ export default function Home() {
   }, []);
 
   const handleDeleteApp = (id) => {
-    const target = apps.find((a) => a.id === id || String(a.id) === String(id));
+    const target = apps.find(
+      (a) => a.id === id || String(a.id) === String(id)
+    );
     deleteApp(id);
     showToast(
       `سامانه «${target?.titleFa || target?.title || "سامانه"}» حذف شد.`,
-      "success",
+      "success"
     );
   };
 
@@ -61,26 +92,91 @@ export default function Home() {
     }
   };
 
-  // فیلتر بر اساس نقش + جستجو (GUEST / بدون لاگین → بدون سامانه)
-  const filteredApps = (apps || []).filter((app) => {
-    if (!canAccessApp(app)) return false;
+  // ۱. فیلتر سامانه‌ها بر اساس دسترسی نقش کاربر
+  const accessibleApps = useMemo(() => {
+    return (apps || []).filter((app) => {
+      if (typeof canAccessApp === "function") {
+        return canAccessApp(app);
+      }
+      return true;
+    });
+  }, [apps, canAccessApp]);
 
+  // ۲. مرتب‌سازی سامانه‌های در دسترس طبق چیدمان درگ‌شده کاربر
+  const orderedAccessibleApps = useMemo(() => {
+    if (!customOrder || customOrder.length === 0) {
+      return accessibleApps;
+    }
+
+    return [...accessibleApps].sort((a, b) => {
+      const indexA = customOrder.indexOf(a.id);
+      const indexB = customOrder.indexOf(b.id);
+      if (indexA === -1 && indexB === -1) return 0;
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
+      return indexA - indexB;
+    });
+  }, [accessibleApps, customOrder]);
+
+  // ۳. فیلتر نهایی بر اساس متن جستجو
+  const finalDisplayApps = useMemo(() => {
     const term = searchTerm.toLowerCase().trim();
-    if (!term) return true;
+    if (!term) return orderedAccessibleApps;
 
-    return (
-      app.titleFa?.toLowerCase().includes(term) ||
-      app.titleEn?.toLowerCase().includes(term) ||
-      app.desc?.toLowerCase().includes(term)
-    );
-  });
+    return orderedAccessibleApps.filter((app) => {
+      return (
+        app.titleFa?.toLowerCase().includes(term) ||
+        app.titleEn?.toLowerCase().includes(term) ||
+        app.title?.toLowerCase().includes(term) ||
+        app.desc?.toLowerCase().includes(term)
+      );
+    });
+  }, [orderedAccessibleApps, searchTerm]);
+
+  // رویدادهای Drag & Drop
+  const handleDragStart = (index) => {
+    dragItem.current = index;
+  };
+
+  const handleDragEnter = (index) => {
+    dragOverItem.current = index;
+  };
+
+  const handleDragEnd = () => {
+    if (
+      dragItem.current === null ||
+      dragOverItem.current === null ||
+      dragItem.current === dragOverItem.current
+    ) {
+      dragItem.current = null;
+      dragOverItem.current = null;
+      return;
+    }
+
+    // جابه‌جایی در لیست فعلی
+    const nextList = [...finalDisplayApps];
+    const draggedItem = nextList.splice(dragItem.current, 1)[0];
+    nextList.splice(dragOverItem.current, 0, draggedItem);
+
+    dragItem.current = null;
+    dragOverItem.current = null;
+
+    const newOrderIds = nextList.map((app) => app.id);
+    setCustomOrder(newOrderIds);
+
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(newOrderIds));
+    } catch {
+      // نادیده‌گرفتن خطای سهمیه دیسک مرورگر
+    }
+  };
 
   return (
     <div
       className="relative min-h-screen overflow-x-hidden flex items-center justify-center p-3 md:p-6 lg:p-8 font-sans select-none text-slate-800 dark:text-slate-100 transition-colors duration-300"
       dir="rtl"
     >
-      {/* پس‌زمینه: عکس واضح با افکت تاریک‌کننده ملایم */}
+      {/* پس‌زمینه: عکس صنعتی باما با لایه نرم شیشه‌ای */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <Image
           src="/mine.png"
@@ -93,8 +189,7 @@ export default function Home() {
       </div>
 
       {/* کانتینر اصلی داشبورد */}
-      <div className="relative z-10 flex flex-col w-full max-w-345 min-h-125 max-h-[85vh] bg-white/50 dark:bg-slate-900/40 backdrop-blur-md rounded-3xl border border-white/70 dark:border-white/10 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.7)] overflow-hidden transition-all duration-300">
-
+      <div className="relative z-10 flex flex-col w-full max-w-7xl min-h-125 max-h-[85vh] bg-white/50 dark:bg-slate-900/40 backdrop-blur-md rounded-3xl border border-white/70 dark:border-white/10 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.7)] overflow-hidden transition-all duration-300">
         <div className="flex-1 min-h-0 flex flex-col gap-3">
           {/* هدر */}
           <div className="shrink-0">
@@ -108,21 +203,21 @@ export default function Home() {
 
           {/* بدنه داشبورد */}
           <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch overflow-hidden">
-            {/* ستون سایدبار */}
+            {/* ستون سایدبار و ویجت‌ها */}
             <div className="lg:col-span-3 h-full min-h-0 flex flex-col">
-              <SidebarWidgets appCount={filteredApps.length} />
+              <SidebarWidgets appCount={finalDisplayApps.length} />
             </div>
 
             {/* محفظه نمایش کارت‌های سامانه‌ها: شفاف و شیشه‌ای */}
             <div className="lg:col-span-9 flex flex-col h-full min-h-0 bg-white/20 dark:bg-slate-900/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30 dark:border-white/10 shadow-inner transition-colors duration-300">
-
-              {/* گرید سامانه‌ها */}
+              {/* گرید سامانه‌ها همراه با Drag & Drop */}
               <div className="flex-1 min-h-0 overflow-y-auto pr-1 custom-scrollbar">
-                {filteredApps.length > 0 ? (
+                {finalDisplayApps.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3 pb-2">
-                    {filteredApps.map((app, index) => (
+                    {finalDisplayApps.map((app, index) => (
                       <AppCard
                         key={app.id ?? `app-${index}`}
+                        index={index}
                         {...app}
                         canManage={canManage}
                         onUpdate={(id) => {
@@ -132,6 +227,9 @@ export default function Home() {
                           if (target) setEditingApp(target);
                         }}
                         onDelete={handleDeleteApp}
+                        onDragStartItem={handleDragStart}
+                        onDragEnterItem={handleDragEnter}
+                        onDragEndItem={handleDragEnd}
                       />
                     ))}
                   </div>
@@ -141,8 +239,8 @@ export default function Home() {
                       {isGuest || !user
                         ? "برای مشاهده سامانه‌ها وارد حساب کاربری شوید."
                         : searchTerm
-                          ? `سامانه‌ای با عنوان «${searchTerm}» پیدا نشد.`
-                          : "سامانه‌ای برای نقش شما تعریف نشده است."}
+                        ? `سامانه‌ای با عنوان «${searchTerm}» پیدا نشد.`
+                        : "سامانه‌ای برای نقش شما تعریف نشده است."}
                     </p>
                   </div>
                 )}
@@ -151,20 +249,17 @@ export default function Home() {
           </div>
         </div>
 
-        {/* دکمه شناور افزودن سامانه */}
+        {/* دکمه شناور افزودن سامانه جدید */}
         {canManage && (
           <div className="absolute left-6 bottom-6 z-40 group">
-            <div className="absolute -inset-1 bg-linear-to-r from-cyan-500 to-blue-600 rounded-full blur-md opacity-50 group-hover:opacity-85 transition duration-500 group-hover:scale-110 pointer-events-none" />
+            <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full blur-md opacity-50 group-hover:opacity-85 transition duration-500 group-hover:scale-110 pointer-events-none" />
 
             <button
               onClick={handleAddNewApp}
               type="button"
               className="animate-pulse relative flex items-center justify-center w-12 h-12 rounded-full bg-cyan-600/85 hover:bg-cyan-500 dark:bg-cyan-500/40 dark:hover:bg-cyan-500/60 backdrop-blur-xl border border-white/40 dark:border-cyan-300/40 text-white shadow-[0_8px_30px_rgb(0,0,0,0.25)] transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer"
             >
-              <Plus
-                size={24}
-                strokeWidth={2.5}
-              />
+              <Plus size={24} strokeWidth={2.5} />
             </button>
 
             <div className="pointer-events-none absolute left-14 top-1/2 -translate-y-1/2 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 px-3 py-1.5 rounded-xl bg-slate-950/90 backdrop-blur-md border border-white/10 text-white text-xs font-bold whitespace-nowrap shadow-xl">
@@ -172,7 +267,6 @@ export default function Home() {
             </div>
           </div>
         )}
-
       </div>
 
       {/* مدال‌ها */}

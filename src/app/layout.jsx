@@ -1,3 +1,18 @@
+/**
+ * File: src/app/layout.jsx
+ *
+ * تنها تغییر نسبت به نسخه قبلی، اضافه شدن کلاس `dark` به تگ <html> است.
+ *
+ * چرا مهم است: در globals.css نوشته شده
+ *     @custom-variant dark (&:where(.dark, .dark *));
+ * یعنی واریانت dark: فقط وقتی فعال می‌شود که کلاس `dark` روی یکی از والدها باشد.
+ * چون هیچ‌جا این کلاس ست نمی‌شد، تمام کلاس‌های dark:* در کل پروژه (صدها مورد)
+ * بی‌اثر بودند و پورتال همیشه در تم روشن رندر می‌شد.
+ *
+ * اگر بعداً کلیدِ تعویض تم (theme switcher) اضافه کردید، کافی است همین کلاس را
+ * روی document.documentElement اضافه/حذف کنید.
+ */
+
 import localFont from "next/font/local";
 import "./globals.css";
 import ToastContainer from "@/src/components/ui/ToastContainer";
@@ -77,7 +92,7 @@ export default function RootLayout({ children }) {
       lang="fa"
       dir="rtl"
       suppressHydrationWarning
-      className={`${vazir.variable} ${yekan.variable} h-full antialiased`}
+      className={`dark ${vazir.variable} ${yekan.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-slate-50 font-sans text-slate-800 selection:bg-cyan-500 selection:text-white transition-colors duration-200 dark:bg-[#070c18] dark:text-slate-100">
         <ToastProvider>

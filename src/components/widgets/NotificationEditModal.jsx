@@ -6,63 +6,12 @@ import {
   X,
   Search,
   Check,
-  UtensilsCrossed,
-  Coffee,
-  Home,
-  Palmtree,
-  CalendarDays,
-  Clock,
-  Sparkles,
-  ShieldAlert,
-  ShieldCheck,
-  Info,
-  Bus,
-  Car,
-  CreditCard,
-  Banknote,
-  Stethoscope,
-  HeartPulse,
-  Dumbbell,
-  HardHat,
-  Pickaxe,
-  Wrench,
-  Wifi,
-  Laptop,
-  PartyPopper,
-  Gift,
-  FileText,
-  Building2
+  Building2,
+  Bell
 } from "lucide-react";
 import { useToast } from "@/src/context/ToastContext";
 import { useAuth } from "@/src/context/AuthContext";
-
-const NOTIFICATION_TYPES = [
-  { id: "food", label: "رزرو غذا / سلف", icon: UtensilsCrossed },
-  { id: "coffee", label: "پذیرایی / کافه", icon: Coffee },
-  { id: "villa", label: "رزرو ویلا / اقامتگاه", icon: Home },
-  { id: "trip", label: "گردشگری / تور", icon: Palmtree },
-  { id: "bus", label: "سرویس ایاب و ذهاب", icon: Bus },
-  { id: "car", label: "تردد خودرو / پارکینگ", icon: Car },
-  { id: "salary", label: "حقوق و دستمزد", icon: Banknote },
-  { id: "payment", label: "فیش / پاداش و وام", icon: CreditCard },
-  { id: "contract", label: "بخشنامه و قرارداد", icon: FileText },
-  { id: "health", label: "پزشکی و بهداری", icon: Stethoscope },
-  { id: "insurance", label: "بیمه تکمیلی", icon: HeartPulse },
-  { id: "sport", label: "ورزش و استخر", icon: Dumbbell },
-  { id: "mine", label: "معدن و عملیات", icon: Pickaxe },
-  { id: "hse", label: "HSE و ایمنی", icon: HardHat },
-  { id: "maintenance", label: "تعمیرات و تاسیسات", icon: Wrench },
-  { id: "it_system", label: "سیستم‌ها و IT", icon: Laptop },
-  { id: "network", label: "شبکه و زیرساخت", icon: Wifi },
-  { id: "update", label: "بروزرسانی سامانه", icon: Sparkles },
-  { id: "shift", label: "شیفت و نوبت‌کاری", icon: Clock },
-  { id: "calendar", label: "تقویم و رویداد", icon: CalendarDays },
-  { id: "security_alert", label: "هشدار امنیتی", icon: ShieldAlert },
-  { id: "security_check", label: "تاییدیه حراست", icon: ShieldCheck },
-  { id: "celebration", label: "جشن و مراسم", icon: PartyPopper },
-  { id: "gift", label: "هدایا و بن کارت", icon: Gift },
-  { id: "info", label: "اطلاعیه عمومی", icon: Info },
-];
+import { NOTIF_ICON_TYPES, portalIcons } from "@/src/data/appData";
 
 const COLOR_OPTIONS = [
   { id: "cyan", name: "فیروزه‌ای", class: "bg-cyan-500" },
@@ -72,6 +21,10 @@ const COLOR_OPTIONS = [
   { id: "purple", name: "بنفش", class: "bg-purple-500" },
   { id: "indigo", name: "نیلی", class: "bg-indigo-500" },
   { id: "blue", name: "آبی", class: "bg-blue-500" },
+  { id: "teal", name: "سبز دریایی", class: "bg-teal-500" },
+  { id: "pink", name: "صورتی", class: "bg-pink-500" },
+  { id: "violet", name: "یاسی", class: "bg-violet-500" },
+  { id: "slate", name: "خاکستری", class: "bg-slate-500" },
 ];
 
 export default function NotificationEditModal({
@@ -86,12 +39,13 @@ export default function NotificationEditModal({
   const [searchTerm, setSearchTerm] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const canTargetBroadly = can.sendNotifications(user);
+  const isPrivileged = ["SUPERADMIN", "ADMIN", "SUPERVISOR"].includes(user?.role);
+  const canTargetBroadly = isPrivileged || (can?.sendNotifications ? can.sendNotifications(user) : false);
 
   const [formData, setFormData] = useState({
     title: "",
     desc: "",
-    badge: "اطلاعیه",
+    badge: "اطلاعیه عمومی",
     type: "info",
     badgeColor: "blue",
     department: "",
@@ -110,9 +64,9 @@ export default function NotificationEditModal({
       setFormData({
         title: editData.title || "",
         desc: editData.desc || "",
-        badge: editData.badge || "اطلاعیه",
+        badge: editData.badge || "اطلاعیه عمومی",
         type: editData.type || "info",
-        badgeColor: editData.badgeColor || "blue",
+        badgeColor: editData.badgeColor || editData.color || "blue",
         department: editData.department || editData.createdBy?.department || "",
         targetType: editData.targetType || "ALL",
         targetRole: editData.targetRole || "USER",
@@ -120,12 +74,13 @@ export default function NotificationEditModal({
         targetUserId: editData.targetUserId ? String(editData.targetUserId) : "",
       });
     } else {
+      const defaultType = NOTIF_ICON_TYPES.find((t) => t.id === "food") || NOTIF_ICON_TYPES[0];
       setFormData({
         title: "",
         desc: "",
-        badge: "اطلاعیه",
-        type: "food",
-        badgeColor: "amber",
+        badge: defaultType?.defaultBadge || "رزرو غذا",
+        type: defaultType?.id || "food",
+        badgeColor: defaultType?.color || "amber",
         department: user?.department || "",
         targetType: canTargetBroadly ? "ALL" : "DEPARTMENT",
         targetRole: "USER",
@@ -138,9 +93,10 @@ export default function NotificationEditModal({
   }, [editData, isOpen, user, canTargetBroadly]);
 
   const filteredTypes = useMemo(() => {
-    if (!searchTerm.trim()) return NOTIFICATION_TYPES;
-    return NOTIFICATION_TYPES.filter((item) =>
-      item.label.toLowerCase().includes(searchTerm.toLowerCase().trim()),
+    if (!searchTerm.trim()) return NOTIF_ICON_TYPES;
+    return NOTIF_ICON_TYPES.filter((item) =>
+      item.label.toLowerCase().includes(searchTerm.toLowerCase().trim()) ||
+      item.defaultBadge.toLowerCase().includes(searchTerm.toLowerCase().trim())
     );
   }, [searchTerm]);
 
@@ -194,7 +150,7 @@ export default function NotificationEditModal({
         isEditing
           ? "اطلاعیه با موفقیت ویرایش شد"
           : "اطلاعیه جدید با موفقیت ثبت شد",
-        "success",
+        "success"
       );
 
       setIsSubmitting(false);
@@ -221,7 +177,7 @@ export default function NotificationEditModal({
               onClick={onClose}
             />
 
-            {/* Modal */}
+            {/* Modal Container */}
             <div className="relative z-10 w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[90vh] flex flex-col">
               {/* Header */}
               <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-slate-200/80 dark:border-white/10 bg-slate-50/70 dark:bg-slate-800/50">
@@ -243,7 +199,7 @@ export default function NotificationEditModal({
                 </button>
               </div>
 
-              {/* Body */}
+              {/* Form Body */}
               <form
                 onSubmit={handleSubmit}
                 id="notification-form"
@@ -263,7 +219,7 @@ export default function NotificationEditModal({
                       />
                       <input
                         type="text"
-                        placeholder="جستجوی آیکون..."
+                        placeholder="جستجوی آیکون یا بج..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pr-8 pl-3 py-1.5 text-xs rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500 transition-all"
@@ -273,7 +229,11 @@ export default function NotificationEditModal({
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-40 overflow-y-auto p-1.5 border border-slate-200/80 dark:border-white/10 rounded-2xl bg-slate-50/50 dark:bg-slate-950/40">
                     {filteredTypes.map((item) => {
-                      const IconComponent = item.icon;
+                      const IconComponent =
+                        typeof item.icon === "string"
+                          ? portalIcons[item.icon] || portalIcons[item.id] || Bell
+                          : item.icon || Bell;
+
                       const isSelected = formData.type === item.id;
                       return (
                         <button
@@ -283,9 +243,8 @@ export default function NotificationEditModal({
                             setFormData((prev) => ({
                               ...prev,
                               type: item.id,
-                              badge: prev.badge
-                                ? prev.badge
-                                : item.label.split("/")[0].trim(),
+                              badge: item.defaultBadge || prev.badge,
+                              badgeColor: item.color || prev.badgeColor,
                             }));
                           }}
                           className={`flex items-center gap-2 p-2 rounded-xl text-xs text-right border transition-all ${
@@ -384,12 +343,12 @@ export default function NotificationEditModal({
                       onChange={(e) =>
                         setFormData({ ...formData, targetRole: e.target.value })
                       }
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-cyan-500"
                     >
-                      <option value="USER">USER</option>
-                      <option value="SUPERVISOR">SUPERVISOR</option>
-                      <option value="ADMIN">ADMIN</option>
-                      <option value="GUEST">GUEST</option>
+                      <option value="USER">پرسنل</option>
+                      <option value="SUPERVISOR">سرپرستان</option>
+                      <option value="ADMIN">مدیران</option>
+                      <option value="GUEST">میهمانان</option>
                     </select>
                   )}
 
@@ -404,7 +363,7 @@ export default function NotificationEditModal({
                         })
                       }
                       placeholder="نام دپارتمان مخاطب"
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-100"
                     />
                   )}
 
@@ -419,7 +378,7 @@ export default function NotificationEditModal({
                         })
                       }
                       placeholder="شناسه کاربر (userId)"
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-100"
                     />
                   )}
                 </div>

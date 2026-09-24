@@ -2,6 +2,8 @@
 
 import React from 'react';
 import NotificationWidget from '@/src/components/widgets/NotificationWidget';
+import ActiveSessionsWidget from '@/src/components/dashboard/ActiveSessionsWidget';
+import { useAuth } from '@/src/context/AuthContext';
 import { Settings, Plus } from 'lucide-react';
 
 export default function SidebarWidgets({
@@ -10,6 +12,18 @@ export default function SidebarWidgets({
   onEditNotifications,
   onAddNewApp,
 }) {
+  const { user } = useAuth();
+
+  // شرط بررسی دسترسی: فقط ادمین‌های فناوری اطلاعات (IT) یا سوپرادمین
+  const isItAdmin = Boolean(
+    user &&
+    (user.role === 'SUPERADMIN' ||
+      (user.role === 'ADMIN' &&
+        (user.department === 'فناوری اطلاعات' ||
+          user.department?.toLowerCase() === 'it' ||
+          user.department?.includes('اطلاعات'))))
+  );
+
   return (
     <div className="flex flex-col h-full min-h-0 gap-3">
       {/* هدر سایدبار همراه با شمارنده و دکمه‌های کنترلی/ویرایش */}
@@ -42,6 +56,13 @@ export default function SidebarWidgets({
           )}
         </div>
       </div>
+
+      {/* ویجت مانیتورینگ کاربران فعال در سامانه (مختص ادمین‌های IT) */}
+      {isItAdmin && (
+        <div className="shrink-0">
+          <ActiveSessionsWidget />
+        </div>
+      )}
 
       {/* ویجت اعلانات همراه با ارسال دسترسی canManage */}
       <div className="flex-1 min-h-0">

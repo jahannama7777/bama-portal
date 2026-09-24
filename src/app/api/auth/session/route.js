@@ -1,16 +1,20 @@
-import { NextResponse } from 'next/server';
+/**
+ * File: src/app/api/auth/session/route.js
+ *
+ * باگ نسخه قبلی: محتوای کوکی را مستقیماً JSON.parse می‌کرد و به کلاینت
+ * برمی‌گرداند. یعنی هر کسی با دستکاری کوکی می‌توانست ادعای نقش SUPERADMIN کند.
+ * حالا هویت از روی رکورد Session در دیتابیس بازخوانی می‌شود.
+ */
+
+import { NextResponse } from "next/server";
+import { getCurrentUserFromRequest } from "@/src/lib/session";
 
 export async function GET(req) {
   try {
-    const sessionCookie = req.cookies.get('bama_auth_session');
-
-    if (!sessionCookie || !sessionCookie.value) {
-      return NextResponse.json({ user: null });
-    }
-
-    const user = JSON.parse(sessionCookie.value);
-    return NextResponse.json({ user });
+    const user = await getCurrentUserFromRequest(req);
+    return NextResponse.json({ user: user || null }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ user: null });
+    console.error("GET /api/auth/session Error:", error);
+    return NextResponse.json({ user: null }, { status: 200 });
   }
 }
